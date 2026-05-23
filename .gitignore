@@ -1,0 +1,26 @@
+# Secrets — never commit
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database & uploads
+instance/
+uploads/
+smca_demo.db
+*.db
+
+# Node / Expo
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+*.log

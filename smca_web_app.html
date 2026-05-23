@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMCA — TikTok Campaign Automation</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --bg:       #060610;
+  --bg2:      #0b0b1a;
+  --panel:    #10101e;
+  --panel2:   #161628;
+  --raise:    #1c1c30;
+  --line:     #252540;
+  --line2:    #2e2e50;
+  --tt:       #fe2c55;
+  --tc:       #25f4ee;
+  --tt-dim:   rgba(254,44,85,.12);
+  --tc-dim:   rgba(37,244,238,.1);
+  --purple:   #8b5cf6;
+  --pur-dim:  rgba(139,92,246,.12);
+  --amber:    #f59e0b;
+  --green:    #10b981;
+  --text:     #e8e8f8;
+  --sub:      #8888aa;
+  --dim:      #44445a;
+  --r:        14px;
+  --r-sm:     9px;
+  --font:     'Outfit', sans-serif;
+  --mono:     'Fira Code', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+::selection { background:rgba(254,44,85,.25); }
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--line2); border-radius:3px; }
+
+/* ═══════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════ */
+#loginScreen {
+  min-height:100vh;
+  display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+  background: radial-gradient(ellipse 100% 70% at 50% -5%, rgba(254,44,85,.18) 0%, transparent 65%),
+              radial-gradient(ellipse 80% 60% at 85% 105%, rgba(37,244,238,.1) 0%, transparent 60%),
+              var(--bg);
+}
+.lg-grid {
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 90% 90% at 50% 50%, black 20%, transparent 80%);
+}
+.lg-orb {
+  position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none;
+  animation: floatOrb 10s ease-in-out infinite;
+}
+.lg-orb-1 { width:500px; height:500px; background:rgba(254,44,85,.08); top:-150px; left:-100px; }
+.lg-orb-2 { width:350px; height:350px; background:rgba(37,244,238,.07); bottom:-100px; right:-80px; animation-delay:-4s; }
+@keyframes floatOrb { 0%,100%{transform:translate(0,0)} 50%{transform:translate(25px,35px)} }
+
+.lg-card {
+  position:relative; z-index:1;
+  width:420px;
+  background:linear-gradient(145deg, rgba(16,16,30,.96), rgba(22,22,40,.92));
+  border:1px solid var(--line2);
+  border-radius:24px;
+  padding:48px 44px;
+  backdrop-filter:blur(40px);
+  box-shadow:0 0 120px rgba(254,44,85,.07), 0 48px 80px rgba(0,0,0,.6);
+  animation: cardIn .5s cubic-bezier(.22,1,.36,1);
+}
+@keyframes cardIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+.lg-card::before {
+  content:'';
+  position:absolute; inset:-1px; border-radius:25px; z-index:-1;
+  background:linear-gradient(135deg, rgba(254,44,85,.35), rgba(37,244,238,.2), transparent 55%);
+  mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite:exclude; padding:1px;
+}
+
+.lg-brand { display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:32px; }
+.lg-mark {
+  width:50px; height:50px; border-radius:15px;
+  background:linear-gradient(135deg, var(--tt), #c01e40);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.5rem;
+  box-shadow:0 6px 24px rgba(254,44,85,.45);
+  position:relative; overflow:hidden;
+}
+.lg-mark::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.2),transparent); }
+.lg-word { font-size:1.65rem; font-weight:800; letter-spacing:-1px; }
+.lg-word em { color:var(--tt); font-style:normal; }
+
+.lg-h { font-size:1.35rem; font-weight:700; text-align:center; margin-bottom:5px; }
+.lg-s { font-size:.83rem; color:var(--sub); text-align:center; margin-bottom:32px; }
+
+.lg-lbl { font-family:var(--mono); font-size:.67rem; color:var(--sub); letter-spacing:.5px; display:block; margin-bottom:6px; text-transform:uppercase; }
+.lg-field { margin-bottom:14px; }
+.lg-wrap { position:relative; }
+.lg-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:.9rem; pointer-events:none; }
+input.lg-in {
+  width:100%; padding:12px 13px 12px 38px;
+  background:var(--raise); border:1px solid var(--line);
+  border-radius:10px; color:var(--text);
+  font-family:var(--font); font-size:.9rem; outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+input.lg-in:focus { border-color:var(--tt); box-shadow:0 0 0 3px rgba(254,44,85,.1); }
+input.lg-in::placeholder { color:var(--dim); }
+
+.lg-btn {
+  width:100%; padding:13px; margin-top:8px;
+  border:none; border-radius:12px; cursor:pointer;
+  background:linear-gradient(135deg, var(--tt) 0%, #c01e40 100%);
+  color:#fff; font-family:var(--font); font-size:.95rem; font-weight:700;
+  box-shadow:0 4px 20px rgba(254,44,85,.38);
+  transition:all .22s; position:relative; overflow:hidden;
+}
+.lg-btn::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.15),transparent); }
+.lg-btn:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(254,44,85,.48); }
+.lg-btn:active { transform:translateY(0); }
+
+.lg-div { display:flex; align-items:center; gap:12px; margin:18px 0; }
+.lg-div::before,.lg-div::after { content:''; flex:1; height:1px; background:var(--line); }
+.lg-div-txt { font-family:var(--mono); font-size:.66rem; color:var(--dim); }
+
+.lg-oauth {
+  width:100%; padding:12px;
+  border:1px solid var(--line2); border-radius:12px;
+  background:var(--panel2); color:var(--text);
+  font-family:var(--font); font-size:.87rem; font-weight:500;
+  cursor:pointer; transition:all .2s;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+}
+.lg-oauth:hover { border-color:var(--tt); background:var(--tt-dim); }
+.lg-foot { margin-top:22px; text-align:center; font-size:.7rem; color:var(--dim); line-height:1.5; }
+
+/* ═══════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════ */
+#app { display:none; }
+
+/* SIDEBAR */
+.sb {
+  width:252px; min-height:100vh;
+  background:var(--panel); border-right:1px solid var(--line);
+  position:fixed; top:0; left:0; z-index:50;
+  display:flex; flex-direction:column;
+}
+.sb-logo {
+  padding:22px 22px 18px;
+  border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:11px;
+}
+.sb-mark {
+  width:36px; height:36px; border-radius:10px; flex-shrink:0;
+  background:linear-gradient(135deg, var(--tt), #c01e40);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1rem; box-shadow:0 2px 10px rgba(254,44,85,.35);
+}
+.sb-name { font-size:1.1rem; font-weight:800; letter-spacing:-.5px; }
+.sb-name em { color:var(--tt); font-style:normal; }
+
+.sb-status {
+  margin:12px 22px 0;
+  display:flex; align-items:center; gap:7px;
+  background:var(--tc-dim); border:1px solid rgba(37,244,238,.2);
+  border-radius:20px; padding:5px 12px;
+  font-family:var(--mono); font-size:.65rem; color:var(--tc);
+}
+.sb-dot { width:6px; height:6px; border-radius:50%; background:var(--tc); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.sb-nav { flex:1; padding:14px 10px; overflow-y:auto; }
+.sb-sec {
+  font-family:var(--mono); font-size:.57rem; text-transform:uppercase;
+  letter-spacing:2.5px; color:var(--dim); padding:0 12px;
+  margin:18px 0 6px;
+}
+.ni {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:10px;
+  cursor:pointer; font-size:.86rem; color:var(--sub);
+  transition:all .18s; margin-bottom:2px; position:relative;
+  user-select:none;
+}
+.ni:hover { background:var(--panel2); color:var(--text); }
+.ni.active { background:var(--tt-dim); color:var(--tt); font-weight:600; }
+.ni.active::before {
+  content:''; position:absolute; left:0; top:50%;
+  transform:translateY(-50%); width:3px; height:58%;
+  background:var(--tt); border-radius:0 3px 3px 0;
+}
+.ni-ico { font-size:.95rem; width:20px; text-align:center; flex-shrink:0; }
+.ni-badge {
+  margin-left:auto; font-family:var(--mono); font-size:.6rem;
+  background:var(--tt); color:#fff; padding:2px 7px; border-radius:20px;
+}
+.ni-pill {
+  margin-left:auto; font-family:var(--mono); font-size:.58rem;
+  background:var(--pur-dim); color:var(--purple);
+  border:1px solid rgba(139,92,246,.25); padding:2px 7px; border-radius:20px;
+}
+
+.sb-user {
+  padding:14px 18px; border-top:1px solid var(--line);
+  display:flex; align-items:center; gap:10px;
+}
+.sb-av {
+  width:36px; height:36px; border-radius:50%; flex-shrink:0;
+  background:linear-gradient(135deg, var(--tt), var(--tc));
+  display:flex; align-items:center; justify-content:center;
+  font-size:.78rem; font-weight:700;
+}
+.sb-uname { font-size:.83rem; font-weight:600; }
+.sb-urole { font-size:.68rem; color:var(--sub); }
+.sb-logout {
+  margin-left:auto; background:none; border:none;
+  color:var(--dim); cursor:pointer; font-size:.85rem;
+  padding:4px; transition:color .18s;
+}
+.sb-logout:hover { color:var(--tt); }
+
+/* TOPBAR */
+.main { margin-left:252px; display:flex; flex-direction:column; min-height:100vh; }
+.topbar {
+  height:62px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 36px;
+  background:rgba(6,6,16,.88); backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--line);
+  position:sticky; top:0; z-index:40;
+}
+.tb-left { display:flex; align-items:center; gap:10px; }
+.tb-title { font-size:1rem; font-weight:700; letter-spacing:-.3px; }
+.tb-role-pill {
+  font-family:var(--mono); font-size:.6rem;
+  background:var(--raise); border:1px solid var(--line2);
+  padding:3px 9px; border-radius:20px; color:var(--sub);
+}
+.tb-right { display:flex; align-items:center; gap:10px; }
+
+/* BUTTONS */
+.btn {
+  padding:8px 18px; border-radius:9px; border:none;
+  font-family:var(--font); font-size:.82rem; font-weight:600;
+  cursor:pointer; transition:all .18s; white-space:nowrap;
+}
+.btn-red {
+  background:linear-gradient(135deg, var(--tt), #c01e40);
+  color:#fff; box-shadow:0 2px 10px rgba(254,44,85,.28);
+}
+.btn-red:hover { transform:translateY(-1px); box-shadow:0 4px 18px rgba(254,44,85,.42); }
+.btn-ghost { background:transparent; color:var(--sub); border:1px solid var(--line); }
+.btn-ghost:hover { color:var(--text); border-color:var(--line2); }
+.btn-teal { background:var(--tc-dim); color:var(--tc); border:1px solid rgba(37,244,238,.22); }
+.btn-teal:hover { background:rgba(37,244,238,.18); }
+.btn-pur { background:var(--pur-dim); color:var(--purple); border:1px solid rgba(139,92,246,.22); }
+.btn-pur:hover { background:rgba(139,92,246,.2); }
+.btn-sm { padding:6px 13px; font-size:.76rem; }
+
+/* CONTENT */
+.content { padding:30px 36px; flex:1; }
+.view { display:none; animation:viewIn .28s cubic-bezier(.22,1,.36,1); }
+.view.active { display:block; }
+@keyframes viewIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* CARDS */
+.card {
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--r); padding:22px;
+}
+.card-hd {
+  font-size:.9rem; font-weight:700;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:18px;
+}
+.card-hd-sub { font-size:.68rem; color:var(--sub); font-family:var(--mono); font-weight:400; }
+
+/* GRIDS */
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+
+/* ═══════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════ */
+.stat {
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--r); padding:20px;
+  position:relative; overflow:hidden;
+  transition:transform .2s, border-color .2s;
+  cursor:default;
+}
+.stat:hover { transform:translateY(-3px); border-color:var(--line2); }
+.stat-glow {
+  position:absolute; top:-24px; right:-24px;
+  width:90px; height:90px; border-radius:50%;
+  filter:blur(40px); pointer-events:none;
+}
+.stat-lbl {
+  font-family:var(--mono); font-size:.65rem; color:var(--sub);
+  text-transform:uppercase; letter-spacing:1.5px; margin-bottom:9px;
+}
+.stat-num { font-size:2.1rem; font-weight:800; letter-spacing:-1.5px; line-height:1; }
+.stat-trend { font-size:.72rem; margin-top:8px; }
+.stat::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, transparent, var(--_c, var(--tt)), transparent);
+  opacity:.6;
+}
+
+/* Bar chart */
+.bchart { display:flex; align-items:flex-end; gap:8px; height:120px; }
+.bc-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; }
+.bc-bar {
+  width:100%; border-radius:4px 4px 0 0;
+  transition:height .5s cubic-bezier(.4,0,.2,1);
+  cursor:pointer;
+}
+.bc-bar:hover { filter:brightness(1.3); }
+.bc-lbl { font-family:var(--mono); font-size:.6rem; color:var(--dim); }
+
+/* Post list rows */
+.prow {
+  display:flex; align-items:center; gap:11px;
+  padding:11px 0; border-bottom:1px solid var(--line);
+}
+.prow:last-child { border-bottom:none; }
+.pthumb {
+  width:40px; height:52px; border-radius:7px;
+  background:var(--raise); border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.25rem; flex-shrink:0; position:relative;
+}
+.pthumb::after {
+  content:'▶'; position:absolute; bottom:2px; right:3px;
+  font-size:.45rem; background:rgba(0,0,0,.75);
+  padding:1px 3px; border-radius:3px; color:#fff;
+}
+.pcap { font-size:.83rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
+.pmeta { font-family:var(--mono); font-size:.67rem; color:var(--sub); }
+
+/* Pills */
+.pill {
+  font-family:var(--mono); font-size:.63rem;
+  padding:3px 9px; border-radius:20px; font-weight:500;
+  white-space:nowrap; flex-shrink:0;
+}
+.p-sched  { background:rgba(139,92,246,.15); color:var(--purple); }
+.p-pub    { background:rgba(37,244,238,.12); color:var(--tc); }
+.p-fail   { background:var(--tt-dim); color:var(--tt); }
+.p-draft  { background:rgba(245,158,11,.12); color:var(--amber); }
+
+/* Ring SVG */
+.rings-wrap { display:flex; flex-direction:column; gap:16px; }
+.ring-row { display:flex; align-items:center; gap:14px; }
+.ring-info-val { font-size:.87rem; font-weight:700; }
+.ring-info-lbl { font-size:.7rem; color:var(--sub); margin-top:1px; }
+
+/* ═══════════════════════════════════════════
+   SCHEDULER
+═══════════════════════════════════════════ */
+.sched-grid { display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start; }
+
+.upload-zone {
+  border:2px dashed var(--line2); border-radius:var(--r);
+  padding:36px 20px; text-align:center;
+  cursor:pointer; transition:all .2s; background:var(--panel2);
+  position:relative; overflow:hidden;
+}
+.upload-zone:hover, .upload-zone.drag { border-color:var(--tt); background:rgba(254,44,85,.04); }
+.upload-zone.done { border-color:var(--tc); cursor:default; }
+.uz-ico { font-size:2.8rem; display:block; margin-bottom:8px; }
+.uz-main { font-size:.88rem; font-weight:600; margin-bottom:3px; }
+.uz-sub { font-size:.75rem; color:var(--sub); }
+.uz-prog { display:none; margin-top:14px; height:4px; background:var(--line); border-radius:4px; overflow:hidden; }
+.uz-bar { height:4px; background:linear-gradient(90deg, var(--tt), var(--tc)); transition:width .15s; }
+.uz-file { display:none; margin-top:10px; font-family:var(--mono); font-size:.75rem; color:var(--tc); }
+
+.fl { font-family:var(--mono); font-size:.67rem; color:var(--sub); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:6px; }
+.fi {
+  width:100%; background:var(--raise); border:1px solid var(--line);
+  border-radius:var(--r-sm); color:var(--text);
+  font-family:var(--font); font-size:.87rem;
+  padding:10px 13px; outline:none; transition:all .2s;
+}
+.fi:focus { border-color:var(--tt); box-shadow:0 0 0 3px rgba(254,44,85,.08); }
+.fi::placeholder { color:var(--dim); }
+textarea.fi { resize:vertical; min-height:82px; }
+select.fi option { background:var(--panel2); }
+.fg { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+.frow { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.frow-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+
+.ht-wrap { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }
+.ht-chip {
+  background:var(--tc-dim); border:1px solid rgba(37,244,238,.2);
+  color:var(--tc); padding:3px 10px; border-radius:20px;
+  font-family:var(--mono); font-size:.68rem; cursor:pointer;
+  transition:background .15s;
+}
+.ht-chip:hover { background:rgba(37,244,238,.2); }
+
+/* Phone preview */
+.phone-frame {
+  background:var(--bg); border:2px solid var(--line2);
+  border-radius:22px; aspect-ratio:9/16;
+  position:relative; overflow:hidden; width:100%;
+}
+.ph-bg {
+  position:absolute; inset:0;
+  background:linear-gradient(160deg, #0c0c20, #1a0812);
+  display:flex; align-items:center; justify-content:center;
+  font-size:2.8rem; color:var(--dim);
+}
+.ph-overlay {
+  position:absolute; bottom:0; left:0; right:0; z-index:2;
+  padding:18px 13px 20px;
+  background:linear-gradient(to top, rgba(0,0,0,.9) 0%, transparent 100%);
+}
+.ph-user { font-size:.76rem; font-weight:700; color:#fff; margin-bottom:4px; }
+.ph-cap { font-size:.7rem; color:rgba(255,255,255,.85); line-height:1.45; }
+.ph-actions {
+  position:absolute; right:10px; bottom:55px; z-index:3;
+  display:flex; flex-direction:column; gap:18px; align-items:center;
+}
+.ph-act { display:flex; flex-direction:column; align-items:center; gap:1px; cursor:pointer; }
+.ph-act-i { font-size:1.25rem; }
+.ph-act-n { font-size:.56rem; color:rgba(255,255,255,.85); }
+.ph-disc {
+  position:absolute; right:10px; bottom:20px; z-index:3;
+  width:28px; height:28px; border-radius:50%;
+  background:var(--panel2); border:1px solid var(--line2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:.85rem; animation:spin 4s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.preview-box {
+  background:var(--panel2); border:1px solid var(--line);
+  border-radius:var(--r); padding:18px;
+  display:flex; flex-direction:column; gap:14px;
+}
+
+/* ═══════════════════════════════════════════
+   ANALYTICS
+═══════════════════════════════════════════ */
+.m5 { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:22px; }
+.mbox {
+  background:var(--panel2); border:1px solid var(--line);
+  border-radius:12px; padding:16px; text-align:center;
+  transition:transform .2s;
+}
+.mbox:hover { transform:translateY(-2px); }
+.mbox-val { font-size:1.45rem; font-weight:800; letter-spacing:-1px; line-height:1; }
+.mbox-lbl { font-family:var(--mono); font-size:.62rem; color:var(--sub); margin-top:4px; text-transform:uppercase; letter-spacing:.5px; }
+
+.trend-table { width:100%; border-collapse:collapse; }
+.trend-table th {
+  font-family:var(--mono); font-size:.62rem; color:var(--sub);
+  text-transform:uppercase; letter-spacing:1px; text-align:left;
+  padding:8px 10px; border-bottom:1px solid var(--line); font-weight:400;
+}
+.trend-table td { padding:11px 10px; border-bottom:1px solid rgba(37,37,64,.45); font-size:.82rem; vertical-align:middle; }
+.trend-table tr:hover td { background:rgba(255,255,255,.015); }
+.trend-table tr:last-child td { border-bottom:none; }
+.spark { display:inline-flex; align-items:flex-end; gap:2px; height:18px; }
+.sp-b { width:3px; border-radius:2px 2px 0 0; }
+
+/* Area chart canvas */
+canvas { display:block; }
+
+/* Donut */
+.donut-ring { position:relative; display:inline-flex; align-items:center; justify-content:center; }
+.donut-inner { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.donut-pct { font-size:1.3rem; font-weight:800; letter-spacing:-1px; line-height:1; }
+.donut-sub { font-family:var(--mono); font-size:.56rem; color:var(--sub); }
+
+/* ═══════════════════════════════════════════
+   ENGAGEMENT
+═══════════════════════════════════════════ */
+.cmt-item {
+  display:flex; gap:11px; padding:12px 0;
+  border-bottom:1px solid var(--line);
+}
+.cmt-item:last-child { border-bottom:none; }
+.cmt-av {
+  width:34px; height:34px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.76rem; font-weight:700;
+}
+.cmt-name { font-size:.82rem; font-weight:600; margin-bottom:2px; }
+.cmt-txt { font-size:.79rem; color:var(--sub); line-height:1.4; }
+.cmt-acts { display:flex; gap:7px; margin-top:7px; align-items:center; }
+.cmt-btn {
+  font-family:var(--mono); font-size:.67rem; padding:3px 9px;
+  border-radius:6px; border:1px solid var(--line);
+  background:transparent; color:var(--tc); cursor:pointer; transition:all .15s;
+}
+.cmt-btn:hover { background:var(--tc-dim); }
+.cmt-auto { font-family:var(--mono); font-size:.62rem; color:var(--green); }
+
+/* ═══════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════ */
+.tog-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:11px 0; border-bottom:1px solid var(--line);
+}
+.tog-row:last-child { border-bottom:none; }
+.tog-info { font-size:.85rem; }
+.tog-desc { font-size:.71rem; color:var(--sub); margin-top:2px; }
+.toggle {
+  width:42px; height:23px; border-radius:12px;
+  background:var(--line2); cursor:pointer;
+  position:relative; transition:background .2s; flex-shrink:0;
+}
+.toggle.on { background:var(--tt); }
+.toggle::after {
+  content:''; position:absolute;
+  width:17px; height:17px; border-radius:50%;
+  background:#fff; top:3px; left:3px;
+  transition:transform .2s;
+  box-shadow:0 1px 4px rgba(0,0,0,.3);
+}
+.toggle.on::after { transform:translateX(19px); }
+
+/* ═══════════════════════════════════════════
+   CAMPAIGN VIEW
+═══════════════════════════════════════════ */
+.camp-card {
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--r); padding:20px;
+  display:flex; align-items:center; gap:16px;
+  transition:transform .2s, border-color .2s;
+  cursor:pointer; margin-bottom:12px;
+}
+.camp-card:hover { transform:translateY(-2px); border-color:var(--line2); }
+.camp-icon {
+  width:52px; height:52px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.5rem; flex-shrink:0;
+}
+.camp-name { font-size:.95rem; font-weight:700; margin-bottom:3px; }
+.camp-meta { font-family:var(--mono); font-size:.68rem; color:var(--sub); }
+.camp-stats { margin-left:auto; text-align:right; }
+.camp-views { font-size:1.1rem; font-weight:800; }
+.camp-views-lbl { font-family:var(--mono); font-size:.62rem; color:var(--sub); }
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+.toast {
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  background:var(--panel2); border:1px solid var(--line2);
+  border-radius:14px; padding:13px 18px;
+  display:flex; align-items:center; gap:9px;
+  font-size:.82rem; min-width:260px;
+  transform:translateY(80px); opacity:0;
+  transition:all .3s cubic-bezier(.22,1,.36,1);
+  box-shadow:0 10px 40px rgba(0,0,0,.5);
+  pointer-events:none;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+.toast-bar {
+  position:absolute; bottom:0; left:0; height:2px;
+  border-radius:0 0 14px 14px;
+  background:var(--tt);
+}
+.toast.show .toast-bar { animation:tprog 2.8s linear forwards; }
+@keyframes tprog { from{width:100%} to{width:0%} }
+
+/* ═══════════════════════════════════════════
+   MISC UTILS
+═══════════════════════════════════════════ */
+.sep { height:1px; background:var(--line); margin:18px 0; }
+.mb16 { margin-bottom:16px; }
+.mb20 { margin-bottom:20px; }
+.row { display:flex; align-items:center; gap:10px; }
+.row-sb { display:flex; align-items:center; justify-content:space-between; }
+
+/* Progress bar (generic) */
+.pb-track { background:var(--line); border-radius:4px; height:5px; overflow:hidden; }
+.pb-fill { height:5px; border-radius:4px; transition:width .5s ease; }
+
+@media(max-width:900px){
+  .sb { transform:translateX(-100%); transition:transform .3s; }
+  .main { margin-left:0; }
+  .g4,.g3 { grid-template-columns:1fr 1fr; }
+  .sched-grid,.m5 { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ LOGIN ════════════════════ -->
+<div id="loginScreen">
+  <div class="lg-grid"></div>
+  <div class="lg-orb lg-orb-1"></div>
+  <div class="lg-orb lg-orb-2"></div>
+
+  <div class="lg-card">
+    <div class="lg-brand">
+      <div class="lg-mark">🎵</div>
+      <div class="lg-word">SM<em>CA</em></div>
+    </div>
+    <div class="lg-h">Welcome back</div>
+    <div class="lg-s">TikTok Campaign Automation · Emerson University Multan</div>
+
+    <div class="lg-field">
+      <label class="lg-lbl">Email Address</label>
+      <div class="lg-wrap">
+        <span class="lg-icon">✉</span>
+        <input class="lg-in" type="email" id="lgEmail" placeholder="you@eum.edu.pk" value="atharali@eum.edu.pk">
+      </div>
+    </div>
+    <div class="lg-field">
+      <label class="lg-lbl">Password</label>
+      <div class="lg-wrap">
+        <span class="lg-icon">🔒</span>
+        <input class="lg-in" type="password" id="lgPass" placeholder="••••••••" value="smca2026">
+      </div>
+    </div>
+
+    <button class="lg-btn" id="lgBtn" onclick="doLogin()">Sign In to Dashboard</button>
+
+    <div class="lg-div"><span class="lg-div-txt">or connect with TikTok directly</span></div>
+    <button class="lg-oauth" id="ttBtn" onclick="doTikTokLogin()">
+      <span style="font-size:1.15rem">🎵</span>
+      <span>Continue with TikTok OAuth 2.0</span>
+    </button>
+
+    <p class="lg-foot">
+      Muhammad Athar Ali (BSIT-22-16) · Sheraz Umer (BSIT-22-27) · Muhammad Awais Amin (BSIT-22-34)<br>
+      Supervisor: Mr. Muhammad Manshah · Session 2022–2026
+    </p>
+  </div>
+</div>
+
+<!-- ════════════════════ APP ════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sb" id="sb">
+    <div class="sb-logo">
+      <div class="sb-mark">🎵</div>
+      <div class="sb-name">SM<em>CA</em></div>
+    </div>
+    <div class="sb-status" id="sbStatus">
+      <div class="sb-dot"></div>
+      TikTok API Connected
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-sec">Main</div>
+      <div class="ni active" id="ni-dash"    onclick="go('dash',this)"><span class="ni-ico">📊</span>Dashboard</div>
+      <div class="ni"        id="ni-sched"   onclick="go('sched',this)"><span class="ni-ico">📅</span>Post Scheduler<span class="ni-badge">3</span></div>
+      <div class="ni"        id="ni-camps"   onclick="go('camps',this)"><span class="ni-ico">🚀</span>Campaigns</div>
+      <div class="ni"        id="ni-queue"   onclick="go('queue',this)"><span class="ni-ico">🎬</span>Video Queue</div>
+      <div class="ni"        id="ni-engage"  onclick="go('engage',this)"><span class="ni-ico">💬</span>Engagement</div>
+      <div class="ni"        id="ni-anal"    onclick="go('anal',this)"><span class="ni-ico">📈</span>Analytics</div>
+      <div class="sb-sec">Account</div>
+      <div class="ni"        id="ni-settings" onclick="go('settings',this)"><span class="ni-ico">⚙️</span>Settings</div>
+    </nav>
+    <div class="sb-user">
+      <div class="sb-av" id="sbAvatar">MA</div>
+      <div>
+        <div class="sb-uname" id="sbUname">M. Athar Ali</div>
+        <div class="sb-urole" id="sbUrole">Campaign Manager</div>
+      </div>
+      <button class="sb-logout" onclick="doLogout()" title="Logout">⏏</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="tb-left">
+        <span class="tb-title" id="tbTitle">Dashboard</span>
+        <span class="tb-role-pill" id="tbRole">Admin</span>
+      </div>
+      <div class="tb-right">
+        <button class="btn btn-ghost btn-sm" onclick="go('anal',document.getElementById('ni-anal'))">📈 Analytics</button>
+        <button class="btn btn-red" onclick="go('sched',document.getElementById('ni-sched'))">+ Schedule Video</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ──── DASHBOARD ──── -->
+      <div class="view active" id="view-dash">
+        <div class="g4 mb20" id="statsGrid"></div>
+        <div class="g2 mb16">
+          <div class="card">
+            <div class="card-hd">
+              Weekly Post Activity
+              <span class="card-hd-sub">past 7 days</span>
+            </div>
+            <div class="bchart" id="barChart"></div>
+          </div>
+          <div class="card">
+            <div class="card-hd">Upcoming Posts<span class="card-hd-sub">next 3</span></div>
+            <div id="upcomingList"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-hd">Recent Video Queue<span class="card-hd-sub">latest 5</span></div>
+            <div id="recentList"></div>
+          </div>
+          <div class="card">
+            <div class="card-hd">TikTok Performance</div>
+            <div class="rings-wrap" id="perfRings"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──── SCHEDULER ──── -->
+      <div class="view" id="view-sched">
+        <div id="ttWarningBanner" style="display:none;background:rgba(254,44,85,.1);border:1px solid rgba(254,44,85,.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:.82rem;color:var(--tt);align-items:center;gap:10px">
+          <span>⚠️</span>
+          <span>TikTok not connected — your post will be saved but won't publish until you connect. <span style="text-decoration:underline;cursor:pointer" onclick="go('settings',document.getElementById('ni-settings'))">Connect now →</span></span>
+        </div>
+        <div class="sched-grid">
+          <!-- Left: Form -->
+          <div>
+            <div class="card mb16">
+              <div class="card-hd mb16" style="margin-bottom:20px">Schedule TikTok Video</div>
+
+              <!-- Upload -->
+              <div class="fg">
+                <div class="upload-zone" id="uploadZone" onclick="triggerUpload(this)">
+                  <span class="uz-ico">🎬</span>
+                  <div class="uz-main">Drop your TikTok video here or click to browse</div>
+                  <div class="uz-sub">MP4 · MOV · Max 287 MB · Vertical 9:16 recommended</div>
+                  <div class="uz-prog" id="uzProg"><div class="uz-bar" id="uzBar"></div></div>
+                  <div class="uz-file" id="uzFile"></div>
+                </div>
+              </div>
+
+              <div class="sep"></div>
+
+              <!-- Caption -->
+              <div class="fg">
+                <label class="fl">Caption</label>
+                <textarea class="fi" id="capInput" rows="3"
+                  placeholder="Write your TikTok caption here... Keep it punchy! 🔥"
+                  oninput="syncPreview()"></textarea>
+              </div>
+
+              <!-- Date / Time -->
+              <div class="frow">
+                <div class="fg" style="margin-bottom:0">
+                  <label class="fl">Schedule Date</label>
+                  <input class="fi" type="date" id="schDate">
+                </div>
+                <div class="fg" style="margin-bottom:0">
+                  <label class="fl">Time</label>
+                  <input class="fi" type="time" id="schTime" value="18:00">
+                </div>
+              </div>
+              <div style="height:14px"></div>
+
+              <!-- Privacy / Comments -->
+              <div class="frow">
+                <div class="fg" style="margin-bottom:0">
+                  <label class="fl">Privacy</label>
+                  <select class="fi" id="privSel">
+                    <option value="PUBLIC_TO_EVERYONE">Public</option>
+                    <option value="MUTUAL_FOLLOW_FRIENDS">Friends Only</option>
+                    <option value="SELF_ONLY">Private</option>
+                  </select>
+                </div>
+                <div class="fg" style="margin-bottom:0">
+                  <label class="fl">Allow Comments</label>
+                  <select class="fi">
+                    <option>Enabled</option>
+                    <option>Disabled</option>
+                  </select>
+                </div>
+              </div>
+              <div style="height:14px"></div>
+
+              <!-- Duet / Stitch -->
+              <div class="frow-3">
+                <div class="fg" style="margin-bottom:0">
+                  <label class="fl">Duet</label>
+                  <select class="fi"><option>Allow</option><option>Disable</option></select>
+                </div>
+                <div class="fg" style="margin-bottom:0">
+                  <label class="fl">Stitch</label>
+                  <select class="fi"><option>Allow</option><option>Disable</option></select>
+                </div>
+                <div class="fg" style="margin-bottom:0">
+                  <label class="fl">Downloads</label>
+                  <select class="fi"><option>Allow</option><option>Disable</option></select>
+                </div>
+              </div>
+              <div style="height:14px"></div>
+
+              <!-- Hashtags -->
+              <div class="fg">
+                <label class="fl">Hashtags <span style="color:var(--dim)">(Enter to add)</span></label>
+                <input class="fi" id="htInput" placeholder="#fyp  #viral  #trending" onkeydown="addTag(event)">
+                <div class="ht-wrap" id="htWrap"></div>
+              </div>
+
+              <!-- Auto-reply template -->
+              <div class="fg">
+                <label class="fl">Auto-Reply Template</label>
+                <input class="fi" id="replyTmpl" value="Thanks for watching! 🙌 Follow for more content ✨">
+              </div>
+
+              <!-- Actions -->
+              <div style="display:flex;gap:10px;margin-top:6px">
+                <button class="btn btn-ghost" onclick="saveDraft()">Save Draft</button>
+                <button class="btn btn-teal" style="flex:1" onclick="doSchedule()">🕐 Schedule Post</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Preview -->
+          <div style="position:sticky;top:78px">
+            <div class="preview-box">
+              <div style="font-family:var(--mono);font-size:.63rem;color:var(--sub);text-transform:uppercase;letter-spacing:1px">TikTok Preview</div>
+
+              <!-- Live account card -->
+              <div id="previewAccountCard" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--raise);border:1px solid var(--line);border-radius:10px;margin-bottom:10px">
+                <div id="previewAvatarEl" style="width:36px;height:36px;border-radius:50%;background:var(--tt);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:#fff;flex-shrink:0">?</div>
+                <div style="flex:1;min-width:0">
+                  <div id="previewUsernameEl" style="font-weight:700;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Not connected</div>
+                  <div id="previewStatsEl" style="font-size:.7rem;color:var(--sub)">Connect TikTok to see your account</div>
+                </div>
+              </div>
+
+              <div class="phone-frame">
+                <div class="ph-bg" id="phBg">🎬</div>
+                <div class="ph-actions">
+                  <div class="ph-act"><div class="ph-act-i">❤️</div><div class="ph-act-n" id="phLikes">—</div></div>
+                  <div class="ph-act"><div class="ph-act-i">💬</div><div class="ph-act-n" id="phComments">—</div></div>
+                  <div class="ph-act"><div class="ph-act-i">🔖</div><div class="ph-act-n">Save</div></div>
+                  <div class="ph-act"><div class="ph-act-i">↗️</div><div class="ph-act-n">Share</div></div>
+                </div>
+                <div class="ph-disc">🎵</div>
+                <div class="ph-overlay">
+                  <div class="ph-user" id="phUser">@—</div>
+                  <div class="ph-cap" id="phCaption">Your caption appears here in real-time...</div>
+                </div>
+              </div>
+              <!-- Optimal times -->
+              <div>
+                <div style="font-family:var(--mono);font-size:.62rem;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px">Best Times · PKT</div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <div style="display:flex;justify-content:space-between;font-size:.78rem">
+                    <span>🌅 Morning</span><span style="color:var(--sub)">7:00 – 9:00 AM</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:.78rem">
+                    <span>☀️ Afternoon</span><span style="color:var(--sub)">12:00 – 3:00 PM</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:.78rem">
+                    <span>🌙 Evening</span>
+                    <span style="color:var(--tt);font-weight:600">7:00 – 9:00 PM ⭐</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Hashtag suggestions -->
+              <div>
+                <div style="font-family:var(--mono);font-size:.62rem;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Suggested Tags</div>
+                <div style="display:flex;flex-wrap:wrap;gap:5px">
+                  <span class="ht-chip" onclick="quickTag('#fyp')">#fyp</span>
+                  <span class="ht-chip" onclick="quickTag('#viral')">#viral</span>
+                  <span class="ht-chip" onclick="quickTag('#pakistan')">#pakistan</span>
+                  <span class="ht-chip" onclick="quickTag('#fypage')">#fypage</span>
+                  <span class="ht-chip" onclick="quickTag('#trending')">#trending</span>
+                  <span class="ht-chip" onclick="quickTag('#foryou')">#foryou</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──── CAMPAIGNS ──── -->
+      <div class="view" id="view-camps">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div style="font-size:.82rem;color:var(--sub)">All campaigns — active, paused, completed</div>
+          <button class="btn btn-red" onclick="createCampaign()">+ New Campaign</button>
+        </div>
+        <div id="campList"></div>
+      </div>
+
+      <!-- ──── VIDEO QUEUE ──── -->
+      <div class="view" id="view-queue">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:.82rem;color:var(--sub)">All scheduled, published and failed videos</div>
+          <div style="display:flex;gap:7px" id="qFilterRow">
+            <button class="btn btn-ghost btn-sm" onclick="filterQueue('all',this)">All</button>
+            <button class="btn btn-ghost btn-sm" onclick="filterQueue('scheduled',this)">Scheduled</button>
+            <button class="btn btn-ghost btn-sm" onclick="filterQueue('published',this)">Published</button>
+            <button class="btn btn-ghost btn-sm" onclick="filterQueue('failed',this)">Failed</button>
+            <button class="btn btn-ghost btn-sm" onclick="filterQueue('draft',this)">Drafts</button>
+          </div>
+        </div>
+        <div class="card"><div id="queueBody"></div></div>
+      </div>
+
+      <!-- ──── ENGAGEMENT ──── -->
+      <div class="view" id="view-engage">
+        <div class="g2">
+          <div class="card">
+            <div class="card-hd">
+              Live Comments
+              <span style="font-size:.65rem;color:var(--green);font-family:var(--mono)">● auto-polling</span>
+            </div>
+            <div id="cmtList"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="card">
+              <div class="card-hd">Auto-Engagement Rules</div>
+              <div class="tog-row">
+                <div><div class="tog-info">Auto-reply to all comments</div><div class="tog-desc">Uses template below</div></div>
+                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="tog-row">
+                <div><div class="tog-info">Auto-like all comments</div><div class="tog-desc">Increases engagement rate</div></div>
+                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="tog-row">
+                <div><div class="tog-info">Auto-follow back</div><div class="tog-desc">Follow users who follow you</div></div>
+                <div class="toggle" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="tog-row" style="border-bottom:none">
+                <div><div class="tog-info">Smart reply (vary templates)</div><div class="tog-desc">Rotate between 3 templates</div></div>
+                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="sep"></div>
+              <div class="fg" style="margin-bottom:10px">
+                <label class="fl">Reply Template 1</label>
+                <input class="fi" value="Thanks for watching! 🙌 Follow for more ✨">
+              </div>
+              <div class="fg" style="margin-bottom:10px">
+                <label class="fl">Reply Template 2</label>
+                <input class="fi" value="Love your support! 🔥 Stay tuned for new content">
+              </div>
+              <div class="fg" style="margin-bottom:14px">
+                <label class="fl">Reply Template 3</label>
+                <input class="fi" value="You're awesome! 💯 More videos dropping soon!">
+              </div>
+              <button class="btn btn-red" style="width:100%" onclick="toast('✅ Engagement settings saved!')">Save Settings</button>
+            </div>
+            <div class="card">
+              <div class="card-hd">Engagement Stats</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="mbox"><div class="mbox-val" style="color:var(--tc)">94%</div><div class="mbox-lbl">Reply Rate</div></div>
+                <div class="mbox"><div class="mbox-val" style="color:var(--tt)">2.1s</div><div class="mbox-lbl">Avg Response</div></div>
+                <div class="mbox"><div class="mbox-val" style="color:var(--purple)">1,182</div><div class="mbox-lbl">Comments</div></div>
+                <div class="mbox"><div class="mbox-val" style="color:var(--green)">341</div><div class="mbox-lbl">Auto-Replied</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──── ANALYTICS ──── -->
+      <div class="view" id="view-anal">
+        <div class="m5" id="metricStrip"></div>
+        <div class="g2 mb16">
+          <div class="card">
+            <div class="card-hd">Views Over 30 Days<span class="card-hd-sub">TikTok data</span></div>
+            <canvas id="viewCanvas" height="130" style="width:100%"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-hd">Post Status Breakdown</div>
+            <div id="audienceDnt"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd">Top Performing Videos<span class="card-hd-sub">all time</span></div>
+          <table class="trend-table" id="topTable"></table>
+        </div>
+      </div>
+
+      <!-- ──── SETTINGS ──── -->
+      <div class="view" id="view-settings">
+        <div class="g2">
+          <div class="card">
+            <div class="card-hd">TikTok Account</div>
+            <div style="display:flex;gap:14px;align-items:center;margin-bottom:18px">
+              <div class="sb-av" style="width:52px;height:52px;font-size:1.1rem" id="ttAvatarImg">🎵</div>
+              <div>
+                <div style="font-weight:700;font-size:.95rem" id="ttUsername">Not Connected</div>
+                <div style="font-size:.75rem;color:var(--sub)" id="ttStats">Connect your TikTok account below</div>
+              </div>
+            </div>
+            <div class="sep"></div>
+            <button class="btn btn-red" id="connectTikTokBtn" onclick="connectTikTok()" style="width:100%">Connect TikTok Account via OAuth</button>
+          </div>
+          <div class="card">
+            <div class="card-hd">Automation Settings</div>
+            <div class="tog-row"><div><div class="tog-info">Auto-publish scheduled posts</div><div class="tog-desc">Publish at exact scheduled time via cron</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="tog-row"><div><div class="tog-info">Auto-reply comments</div><div class="tog-desc">Apply reply templates automatically</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="tog-row"><div><div class="tog-info">Retry on publish failure</div><div class="tog-desc">Up to 3 automatic retries</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="tog-row"><div><div class="tog-info">Analytics sync (hourly)</div><div class="tog-desc">Pull fresh stats every hour</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="tog-row" style="border-bottom:none"><div><div class="tog-info">Weekly email digest</div><div class="tog-desc">Performance report every Monday</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="sep"></div>
+            <button class="btn btn-red" style="width:100%" onclick="toast('✅ Automation settings saved!')">Save Settings</button>
+          </div>
+          <div class="card">
+            <div class="card-hd">Profile</div>
+            <div style="display:flex;gap:14px;align-items:center;margin-bottom:18px">
+              <div class="sb-av" style="width:52px;height:52px;font-size:1.1rem" id="profileAvatar">MA</div>
+              <div>
+                <div style="font-weight:700;font-size:.95rem" id="profileName">—</div>
+                <div style="font-size:.75rem;color:var(--sub)" id="profileRole">—</div>
+                <div style="font-size:.72rem;color:var(--tt);margin-top:3px" id="profileTikTok">Not connected</div>
+              </div>
+            </div>
+            <div class="fg"><label class="fl">Email</label><input class="fi" id="profileEmail" value=""></div>
+            <div class="sep"></div>
+            <div style="font-size:.78rem;color:var(--sub)">Profile updates require account management — contact admin.</div>
+          </div>
+          <div class="card">
+            <div class="card-hd">Posting Defaults</div>
+            <div class="fg"><label class="fl">Default Privacy</label><select class="fi"><option>Public</option><option>Friends Only</option><option>Private</option></select></div>
+            <div class="fg"><label class="fl">Time Zone</label><select class="fi"><option>Asia/Karachi (PKT +5)</option><option>UTC +0</option><option>America/New_York</option></select></div>
+            <div class="fg"><label class="fl">Default Caption Template</label><textarea class="fi" style="min-height:65px">#fyp #viral #trending #automation #pakistan</textarea></div>
+            <div class="fg" style="margin-bottom:0"><label class="fl">Max Hashtags per Post</label><select class="fi"><option>5</option><option>8</option><option selected>10</option><option>15</option></select></div>
+            <div class="sep"></div>
+            <button class="btn btn-red" onclick="toast('✅ Preferences saved!')">Save Preferences</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<input type="file" id="realFileInput" accept="video/mp4,video/quicktime,.mp4,.mov" style="display:none">
+
+<!-- Toast -->
+<div class="toast" id="toastEl">
+  <span id="toastIco">✅</span>
+  <span id="toastMsg">Done!</span>
+  <div class="toast-bar"></div>
+</div>
+
+<script>
+/* ══════════ CONFIG ══════════ */
+const _origin    = `${window.location.protocol}//${window.location.host}`;
+const API_BASE   = `${_origin}/api`;
+const SERVER_URL = _origin;
+let currentUser       = null;
+let uploadedVideoPath = null;
+let POSTS_DATA        = [];
+let TAGS              = ['#fyp','#viral','#automation','#tiktok','#pakistan'];
+
+/* ══════════ API HELPER ══════════ */
+async function apiFetch(path, opts = {}) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...opts.headers },
+      ...opts,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    const text = await res.text();
+    try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
+    catch { return { ok: res.ok, status: res.status, data: null }; }
+  } catch (e) {
+    return { ok: false, status: 0, data: null };
+  }
+}
+
+/* ══════════ AUTH ══════════ */
+async function checkAuth() {
+  const r = await apiFetch('/auth/me');
+  return r.ok ? r.data.user : null;
+}
+
+async function doLogin() {
+  const btn   = document.getElementById('lgBtn');
+  const email = document.getElementById('lgEmail').value.trim();
+  const pass  = document.getElementById('lgPass').value;
+  if (!email || !pass) { toast('⚠️ Enter email and password'); return; }
+  btn.textContent = 'Signing in…'; btn.disabled = true;
+  const r = await apiFetch('/auth/login', { method: 'POST', body: { email, password: pass } });
+  btn.textContent = 'Sign In to Dashboard'; btn.disabled = false;
+  if (!r.ok) { toast('⚠️ ' + (r.data?.error || 'Login failed')); return; }
+  await showApp(r.data.user);
+}
+
+async function doTikTokLogin() {
+  const btn = document.getElementById('ttBtn');
+  btn.textContent = 'Redirecting to TikTok…'; btn.disabled = true;
+  try {
+    const r = await fetch(`${SERVER_URL}/auth/tiktok/signup`, { credentials: 'include' });
+    const d = await r.json();
+    if (d.auth_url) { window.location.href = d.auth_url; return; }
+  } catch (e) {}
+  btn.textContent = 'Continue with TikTok OAuth 2.0'; btn.disabled = false;
+  toast('⚠️ Could not get TikTok auth URL');
+}
+
+async function doLogout() {
+  await apiFetch('/auth/logout', { method: 'POST' });
+  currentUser = null; uploadedVideoPath = null; POSTS_DATA = [];
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+/* ══════════ INIT ══════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+  const params     = new URLSearchParams(window.location.search);
+  const isCallback = params.has('connected') || params.has('signup') || params.has('error');
+  if (isCallback) history.replaceState({}, '', '/');
+
+  const user = await checkAuth();
+  if (user) {
+    await showApp(user);
+    if (params.get('connected') === '1') {
+      const n = params.get('name') ? decodeURIComponent(params.get('name')) : '';
+      toast('TikTok connected' + (n ? ' as @' + n : '!'));
+    } else if (params.get('signup') === '1') {
+      const n = params.get('name') ? decodeURIComponent(params.get('name')) : '';
+      toast('Signed up via TikTok' + (n ? ' as @' + n : '!'));
+    }
+  }
+  if (params.has('error')) toast('⚠️ TikTok error: ' + decodeURIComponent(params.get('error')));
+
+  const schDate = document.getElementById('schDate');
+  if (schDate) { const d = new Date(); d.setDate(d.getDate()+1); schDate.value = d.toISOString().split('T')[0]; }
+
+  document.getElementById('realFileInput').addEventListener('change', handleFileSelect);
+});
+
+async function showApp(user) {
+  currentUser = user;
+  updateSidebar(user);
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  await Promise.all([loadDashboard(), loadCampaigns(), loadComments()]);
+  renderTags();
+  await loadQueue('all');
+}
+
+function setAvatar(el, url, fallback) {
+  if (!el) return;
+  if (url) {
+    el.style.fontSize = '0';
+    el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.parentElement.style.fontSize='';this.parentElement.textContent='${fallback}';this.remove()">`;
+  } else {
+    el.style.fontSize = '';
+    el.textContent = fallback;
+  }
+}
+
+function updateSidebar(user) {
+  const displayName = user.tiktok_username || user.name || user.email || 'U';
+  const init = displayName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const av   = user.tiktok_avatar || '';
+
+  // Sidebar
+  setAvatar(document.getElementById('sbAvatar'), av, init);
+  document.getElementById('sbUname').textContent  = user.tiktok_username ? '@'+user.tiktok_username : (user.name || user.email);
+  document.getElementById('sbUrole').textContent  = user.role || 'User';
+  document.getElementById('sbStatus').innerHTML   = user.tiktok_connected
+    ? '<div class="sb-dot"></div>TikTok Connected'
+    : '<div class="sb-dot" style="background:var(--dim)"></div>TikTok Not Connected';
+  document.getElementById('tbRole').textContent   = user.role || 'User';
+
+  // Settings profile card
+  setAvatar(document.getElementById('profileAvatar'), av, init);
+  document.getElementById('profileName').textContent   = user.name || user.tiktok_username || user.email;
+  document.getElementById('profileRole').textContent   = user.role || 'User';
+  document.getElementById('profileEmail').value        = user.email || '';
+  document.getElementById('profileTikTok').textContent = user.tiktok_username ? '@' + user.tiktok_username : 'Not connected';
+
+  // TikTok account card (Settings)
+  const ttBtn = document.getElementById('connectTikTokBtn');
+  const ttAvEl = document.getElementById('ttAvatarImg');
+  if (user.tiktok_connected) {
+    setAvatar(ttAvEl, av, init);
+    document.getElementById('ttUsername').textContent = '@' + (user.tiktok_username || 'Connected');
+    document.getElementById('ttStats').textContent    =
+      `${fmt(user.tiktok_followers||0)} followers · ${fmt(user.tiktok_likes||0)} likes · ${fmt(user.tiktok_videos||0)} videos`;
+    if (ttBtn) { ttBtn.textContent = 'Reconnect TikTok Account'; ttBtn.disabled = false; }
+  } else {
+    if (ttAvEl) { ttAvEl.style.fontSize=''; ttAvEl.textContent = '🎵'; }
+    document.getElementById('ttUsername').textContent = 'Not Connected';
+    document.getElementById('ttStats').textContent    = 'Connect your TikTok account below';
+  }
+
+  // Scheduler preview account card
+  const pAvatar   = document.getElementById('previewAvatarEl');
+  const pUsername = document.getElementById('previewUsernameEl');
+  const pStats    = document.getElementById('previewStatsEl');
+  const phUser    = document.getElementById('phUser');
+  if (user.tiktok_connected && user.tiktok_username) {
+    const initials = (user.tiktok_username||'T').slice(0,2).toUpperCase();
+    if (pAvatar) {
+      if (user.tiktok_avatar) {
+        pAvatar.style.background = 'none';
+        pAvatar.innerHTML = `<img src="${user.tiktok_avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">`;
+      } else {
+        pAvatar.textContent = initials;
+      }
+    }
+    if (pUsername) pUsername.textContent = '@' + user.tiktok_username;
+    if (pStats)    pStats.textContent    = `${fmt(user.tiktok_followers||0)} followers · ${fmt(user.tiktok_videos||0)} videos`;
+    if (phUser)    phUser.textContent    = '@' + user.tiktok_username;
+    // real follower count as likes proxy
+    const phLikes    = document.getElementById('phLikes');
+    const phComments = document.getElementById('phComments');
+    if (phLikes)    phLikes.textContent    = fmt(user.tiktok_likes||0);
+    if (phComments) phComments.textContent = '—';
+  } else {
+    if (pUsername) pUsername.textContent = 'Not connected';
+    if (pStats)    pStats.textContent    = 'Connect TikTok in Settings';
+    if (phUser)    phUser.textContent    = '@—';
+  }
+}
+
+/* ══════════ UTILS ══════════ */
+function fmt(n) {
+  n = n || 0;
+  if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if (n >= 1000)    return (n/1000).toFixed(1)+'k';
+  return String(n);
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso), now = new Date();
+  if (d.toDateString() === now.toDateString()) return 'Today ' + d.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+  const yest = new Date(now); yest.setDate(yest.getDate()-1);
+  if (d.toDateString() === yest.toDateString()) return 'Yesterday ' + d.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('en',{month:'short',day:'numeric'}) + ' ' + d.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+}
+function statusEmoji(s) { return s==='published'?'✅':s==='scheduled'?'🕐':s==='failed'?'❌':'📝'; }
+function statusPill(s)  { return s==='published'?'p-pub':s==='scheduled'?'p-sched':s==='failed'?'p-fail':'p-draft'; }
+
+/* ══════════ DASHBOARD ══════════ */
+async function loadDashboard() {
+  const [sumRes, postsRes, weeklyRes] = await Promise.all([
+    apiFetch('/analytics/summary'),
+    apiFetch('/posts'),
+    apiFetch('/analytics/weekly'),
+  ]);
+  const summary = sumRes.ok ? sumRes.data : null;
+  POSTS_DATA    = postsRes.ok ? (postsRes.data?.posts || []) : [];
+  const weekly  = weeklyRes.ok ? weeklyRes.data?.days : null;
+  renderStats(summary);
+  renderBarChart(weekly);
+  renderUpcoming();
+  renderRecent();
+  renderRings(summary);
+}
+
+function renderStats(s) {
+  s = s || {};
+  const items = [
+    {lbl:'Videos Scheduled', val:fmt(s.scheduled_count||0), trend:`${s.published_count||0} published · ${s.failed_count||0} failed`, tc:'var(--tc)', sc:'var(--tt)'},
+    {lbl:'Auto-Published',   val:fmt(s.published_count||0), trend:`${s.draft_count||0} drafts remaining`,                            tc:'var(--sub)', sc:'var(--tc)'},
+    {lbl:'Total Views',      val:fmt(s.total_views||0),     trend:s.total_views?'All published videos':'No published videos yet',    tc:'var(--tc)', sc:'var(--purple)'},
+    {lbl:'Avg Engagement',   val:(s.engagement_rate||0)+'%',trend:`${fmt(s.total_likes||0)} likes · ${fmt(s.total_comments||0)} comments`, tc:'var(--amber)', sc:'var(--amber)'},
+  ];
+  document.getElementById('statsGrid').innerHTML = items.map(it=>`
+    <div class="stat" style="--_c:${it.sc}">
+      <div class="stat-glow" style="background:${it.sc}"></div>
+      <div class="stat-lbl">${it.lbl}</div>
+      <div class="stat-num">${it.val}</div>
+      <div class="stat-trend" style="color:${it.tc}">${it.trend}</div>
+    </div>`).join('');
+}
+
+function renderBarChart(days) {
+  const labels = days ? days.map(d=>d.day) : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const data   = days ? days.map(d=>d.count) : [0,0,0,0,0,0,0];
+  const mx = Math.max(...data, 1);
+  document.getElementById('barChart').innerHTML = labels.map((d,i)=>{
+    const h = Math.max(4, Math.round(data[i]/mx*100));
+    const hot = data[i] > 0;
+    return `<div class="bc-col">
+      <div class="bc-bar" style="height:${h}%;background:${hot?'linear-gradient(to top,var(--tt),var(--tc))':'var(--raise)'};border:1px solid ${hot?'transparent':'var(--line2)'};" title="${data[i]} post${data[i]!==1?'s':''}"></div>
+      <div class="bc-lbl" style="color:${hot?'var(--tt)':'var(--dim)'}">${d}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderUpcoming() {
+  const up = POSTS_DATA.filter(p=>p.status==='scheduled').slice(0,3);
+  const el  = document.getElementById('upcomingList');
+  if (!up.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub);font-size:.82rem">No scheduled posts yet</div>'; return; }
+  el.innerHTML = up.map(p=>`
+    <div class="prow">
+      <div class="pthumb">${statusEmoji(p.status)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="pcap">${p.caption||'(no caption)'}</div>
+        <div class="pmeta">${fmtDate(p.scheduled_at)}</div>
+      </div>
+      <span class="pill p-sched">sched</span>
+    </div>`).join('') +
+    `<div style="text-align:center;font-size:.72rem;color:var(--dim);margin-top:10px">${up.length} video${up.length!==1?'s':''} queued</div>`;
+}
+
+function renderRecent() {
+  const posts  = POSTS_DATA.slice(0,5);
+  const drafts = POSTS_DATA.filter(p=>p.status==='draft');
+  const el     = document.getElementById('recentList');
+
+  let html = '';
+
+  if (drafts.length) {
+    html += `<div style="font-size:.72rem;font-weight:700;color:var(--amber);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">
+      Drafts (${drafts.length})</div>`;
+    html += drafts.slice(0,3).map(p=>`
+      <div class="prow" style="border-left:2px solid var(--amber);padding-left:8px">
+        <div class="pthumb">📝</div>
+        <div style="flex:1;min-width:0">
+          <div class="pcap">${p.caption||'(no caption)'}</div>
+          <div class="pmeta">Draft · ${fmtDate(p.created_at)}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="go('sched',document.getElementById('ni-sched'))">Edit</button>
+      </div>`).join('');
+    if (drafts.length > 3) html += `<div style="font-size:.72rem;color:var(--dim);padding:4px 0 8px">${drafts.length-3} more draft${drafts.length-3!==1?'s':''} — see Video Queue</div>`;
+    html += '<div style="height:10px"></div>';
+  }
+
+  if (!posts.length && !drafts.length) {
+    el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--sub);font-size:.82rem">
+      No posts yet.<br><span style="color:var(--tt);cursor:pointer" onclick="go('sched',document.getElementById('ni-sched'))">Schedule your first video →</span></div>`;
+    return;
+  }
+
+  html += posts.filter(p=>p.status!=='draft').slice(0,5).map(p=>`
+    <div class="prow">
+      <div class="pthumb">${statusEmoji(p.status)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="pcap">${p.caption||'(no caption)'}</div>
+        <div class="pmeta">${fmtDate(p.created_at)}${p.analytics?.views>0?' · '+fmt(p.analytics.views)+' views':''}</div>
+      </div>
+      <span class="pill ${statusPill(p.status)}">${p.status}</span>
+    </div>`).join('');
+
+  el.innerHTML = html;
+}
+
+function renderRings(s) {
+  s = s || {};
+  const total      = (s.published_count||0)+(s.scheduled_count||0)+(s.failed_count||0);
+  const completion = total>0?Math.round((s.published_count||0)/total*100):0;
+  const items = [
+    {lbl:'Completion Rate',  v:completion,                                              c:'var(--tt)'},
+    {lbl:'Engagement Rate',  v:Math.min(Math.round((s.engagement_rate||0)*10), 100),    c:'var(--tc)'},
+    {lbl:'Post Success Rate',v:total>0?Math.round((s.published_count||0)/total*100):0,  c:'var(--purple)'},
+  ];
+  document.getElementById('perfRings').innerHTML = items.map(it=>{
+    const r=38,circ=2*Math.PI*r,d=circ*it.v/100;
+    return `<div class="ring-row">
+      <svg width="56" height="56" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="${r}" fill="none" stroke="var(--raise)" stroke-width="8"/>
+        <circle cx="40" cy="40" r="${r}" fill="none" stroke="${it.c}" stroke-width="8"
+          stroke-dasharray="${d.toFixed(1)} ${(circ-d).toFixed(1)}"
+          stroke-linecap="round" transform="rotate(-90 40 40)"/>
+        <text x="40" y="45" text-anchor="middle" fill="${it.c}"
+          font-family="Outfit,sans-serif" font-size="15" font-weight="800">${it.v}%</text>
+      </svg>
+      <div><div class="ring-info-val">${it.v}%</div><div class="ring-info-lbl">${it.lbl}</div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════ CAMPAIGNS ══════════ */
+async function loadCampaigns() {
+  const r = await apiFetch('/campaigns');
+  renderCampaigns(r.ok ? (r.data?.campaigns || []) : []);
+}
+
+function renderCampaigns(camps) {
+  const colors = ['var(--tt)','var(--tc)','var(--purple)','var(--amber)','var(--green)'];
+  const el = document.getElementById('campList');
+  if (!camps.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--sub)">No campaigns yet. Create one above.</div>'; return; }
+  el.innerHTML = camps.map((c,i)=>`
+    <div class="camp-card">
+      <div class="camp-icon" style="background:${colors[i%colors.length]}18;border:1px solid ${colors[i%colors.length]}30">🚀</div>
+      <div style="flex:1">
+        <div class="camp-name">${c.name}</div>
+        <div class="camp-meta">${c.post_count} posts · ${c.status}</div>
+      </div>
+      <span class="pill ${c.status==='active'?'p-pub':c.status==='scheduled'?'p-sched':''}" style="margin-left:14px">${c.status}</span>
+      <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="deleteCampaign(${c.id})">✕</button>
+    </div>`).join('');
+}
+
+async function createCampaign() {
+  const name = prompt('Campaign name:');
+  if (!name?.trim()) return;
+  const r = await apiFetch('/campaigns', { method:'POST', body:{ name:name.trim() } });
+  if (r.ok) { toast('🚀 Campaign created!'); await loadCampaigns(); }
+  else toast('⚠️ ' + (r.data?.error || 'Failed to create campaign'));
+}
+
+async function deleteCampaign(id) {
+  if (!confirm('Delete this campaign?')) return;
+  await apiFetch(`/campaigns/${id}`, { method:'DELETE' });
+  await loadCampaigns();
+}
+
+/* ══════════ QUEUE ══════════ */
+async function loadQueue(filter = 'all') {
+  const path = filter==='all' ? '/posts' : `/posts?status=${filter}`;
+  const r    = await apiFetch(path);
+  renderQueue(r.ok ? (r.data?.posts || []) : [], filter);
+}
+
+function renderQueue(posts, filter='all') {
+  document.getElementById('queueBody').innerHTML = posts.length
+    ? posts.map(p=>`
+      <div class="prow" style="padding:13px 0">
+        <div class="pthumb" style="width:44px;height:58px;font-size:1.3rem">${statusEmoji(p.status)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="pcap" style="font-size:.86rem">${p.caption||'(no caption)'}</div>
+          <div class="pmeta">${fmtDate(p.scheduled_at||p.created_at)}${p.analytics?.views>0?' · '+fmt(p.analytics.views)+' views':''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="pill ${statusPill(p.status)}">${p.status}</span>
+          ${p.status==='scheduled'?`<button class="btn btn-red btn-sm" onclick="publishNow(${p.id})">▶ Now</button>`:''}
+          ${p.status==='scheduled'||p.status==='draft'?`<button class="btn btn-ghost btn-sm" onclick="deletePost(${p.id})">✕</button>`:''}
+          ${p.status==='failed'?`<button class="btn btn-teal btn-sm" onclick="retryPost(${p.id})">↺ Retry</button>`:''}
+        </div>
+      </div>`).join('')
+    : `<div style="padding:28px;text-align:center;color:var(--sub);font-size:.84rem">No ${filter==='all'?'':filter+' '}videos</div>`;
+}
+
+function filterQueue(f, btn) {
+  document.querySelectorAll('#qFilterRow .btn').forEach(b=>b.style.borderColor='');
+  btn.style.borderColor = 'var(--tt)';
+  loadQueue(f);
+}
+
+async function deletePost(id) {
+  if (!confirm('Remove this post?')) return;
+  await apiFetch(`/posts/${id}`, { method:'DELETE' });
+  await Promise.all([loadQueue('all'), loadDashboard()]);
+}
+
+async function retryPost(id) {
+  await apiFetch(`/posts/${id}`, { method:'PUT', body:{ status:'scheduled' } });
+  toast('Post re-queued');
+  await loadQueue('all');
+}
+
+async function publishNow(id) {
+  if (!confirm('Publish this video to TikTok right now?')) return;
+  toast('Publishing to TikTok…');
+  const r = await apiFetch(`/posts/${id}/publish-now`, { method:'POST' });
+  if (r.ok) {
+    toast('Published to TikTok!');
+    await Promise.all([loadQueue('all'), loadDashboard()]);
+  } else {
+    toast('Failed: ' + (r.data?.error || 'TikTok error'));
+  }
+}
+
+/* ══════════ ENGAGEMENT ══════════ */
+async function loadComments() {
+  const r = await apiFetch('/comments');
+  renderComments(r.ok ? (r.data?.comments || []) : []);
+}
+
+function renderComments(comments) {
+  const clrs = ['linear-gradient(135deg,var(--tt),#b01a38)','linear-gradient(135deg,#6c63ff,#4f46e5)','linear-gradient(135deg,var(--tc),#0891b2)','linear-gradient(135deg,#f59e0b,#d97706)','linear-gradient(135deg,#10b981,#059669)'];
+  const el = document.getElementById('cmtList');
+  if (!comments.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub);font-size:.82rem">No comments yet. Connect TikTok to sync real comments.</div>';
+    return;
+  }
+  el.innerHTML = comments.map((c,i)=>`
+    <div class="cmt-item">
+      <div class="cmt-av" style="background:${clrs[i%clrs.length]}">${(c.commenter_name||'?')[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div class="cmt-name">${c.commenter_name} <span style="color:var(--dim);font-size:.67rem;font-weight:400">${fmtDate(c.created_at)}</span></div>
+        <div class="cmt-txt">${c.text}</div>
+        <div class="cmt-acts">
+          <button class="cmt-btn" onclick="replyComment(${c.id})">Reply</button>
+          <button class="cmt-btn" onclick="likeComment(${c.id})">Like</button>
+          ${c.auto_replied?'<span class="cmt-auto">✓ auto-replied</span>':''}
+          ${c.auto_liked  ?'<span class="cmt-auto">✓ auto-liked</span>':''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function replyComment(id) {
+  const text = prompt('Reply:');
+  if (!text) return;
+  const r = await apiFetch(`/comments/${id}/reply`, { method:'POST', body:{ text } });
+  if (r.ok) { toast('↩ Reply sent!'); await loadComments(); }
+  else toast('⚠️ ' + (r.data?.error || 'Reply failed'));
+}
+
+async function likeComment(id) {
+  await apiFetch(`/comments/${id}/like`, { method:'POST' });
+  toast('❤️ Comment liked!');
+  await loadComments();
+}
+
+/* ══════════ ANALYTICS ══════════ */
+async function renderAnalytics() {
+  const [sumRes, postsRes, allRes] = await Promise.all([
+    apiFetch('/analytics/summary'),
+    apiFetch('/analytics/posts'),
+    apiFetch('/analytics/all-posts'),
+  ]);
+  const s        = sumRes.ok   ? sumRes.data              : {};
+  const pubPosts = postsRes.ok ? (postsRes.data?.posts||[]) : [];
+  const allPosts = allRes.ok   ? (allRes.data?.posts||[])   : [];
+
+  const ms = [
+    {v:fmt(s.scheduled_count||0), l:'Scheduled',    c:'var(--tc)'},
+    {v:fmt(s.published_count||0), l:'Published',    c:'var(--tt)'},
+    {v:fmt(s.draft_count||0),     l:'Drafts',       c:'var(--amber)'},
+    {v:fmt(s.failed_count||0),    l:'Failed',       c:'#e74c3c'},
+    {v:fmt(s.total_views||0),     l:'Total Views',  c:'var(--purple)'},
+    {v:(s.engagement_rate||0)+'%',l:'Engagement',   c:'var(--green)'},
+  ];
+  document.getElementById('metricStrip').innerHTML = ms.map(m=>`
+    <div class="mbox">
+      <div class="mbox-val" style="color:${m.c}">${m.v}</div>
+      <div class="mbox-lbl">${m.l}</div>
+    </div>`).join('');
+
+  // Line chart — views from published posts (falls back to weekly post counts)
+  setTimeout(()=>{
+    const cvs = document.getElementById('viewCanvas');
+    if (!cvs) return;
+    const W = cvs.offsetWidth||500, H=130;
+    cvs.width=W; cvs.height=H;
+    const ctx = cvs.getContext('2d');
+    const raw = pubPosts.length ? pubPosts.map(p=>p.analytics?.views||0) : allPosts.map((_,i)=>i+1).reverse();
+    const data = raw.length >= 2 ? raw : [...raw, 0, 0].slice(0,Math.max(raw.length,2));
+    const mx  = Math.max(...data) || 1;
+    const pts = data.map((v,i)=>[i/(data.length-1)*(W-16)+8, H-v/mx*(H-18)-9]);
+    const grd = ctx.createLinearGradient(0,0,0,H);
+    grd.addColorStop(0,'rgba(254,44,85,.28)'); grd.addColorStop(1,'rgba(254,44,85,0)');
+    ctx.beginPath(); ctx.moveTo(pts[0][0],H);
+    pts.forEach(p=>ctx.lineTo(p[0],p[1]));
+    ctx.lineTo(pts[pts.length-1][0],H); ctx.closePath();
+    ctx.fillStyle=grd; ctx.fill();
+    ctx.beginPath(); pts.forEach((p,i)=>i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]));
+    ctx.strokeStyle='var(--tt)'; ctx.lineWidth=2; ctx.stroke();
+  },60);
+
+  // Post status donut (real data)
+  const total = (s.scheduled_count||0)+(s.published_count||0)+(s.draft_count||0)+(s.failed_count||0);
+  const segs = total > 0 ? [
+    {l:'Scheduled', v:s.scheduled_count||0, c:'var(--tc)'},
+    {l:'Published',  v:s.published_count||0, c:'var(--tt)'},
+    {l:'Drafts',     v:s.draft_count||0,     c:'var(--amber)'},
+    {l:'Failed',     v:s.failed_count||0,    c:'#e74c3c'},
+  ].filter(x=>x.v>0) : [{l:'No posts',v:1,c:'var(--line2)'}];
+  const stotal=segs.reduce((a,x)=>a+x.v,0);
+  let ang=-Math.PI/2,paths='';
+  const cx=55,cy=55,r=45,ri=28;
+  segs.forEach(x=>{
+    const sw=Math.max((x.v/stotal)*Math.PI*2-0.06, 0.01);
+    const [x1,y1]=[cx+r*Math.cos(ang),cy+r*Math.sin(ang)];
+    const [x2,y2]=[cx+r*Math.cos(ang+sw),cy+r*Math.sin(ang+sw)];
+    const [xi1,yi1]=[cx+ri*Math.cos(ang),cy+ri*Math.sin(ang)];
+    const [xi2,yi2]=[cx+ri*Math.cos(ang+sw),cy+ri*Math.sin(ang+sw)];
+    paths+=`<path d="M${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${sw>Math.PI?1:0} 1 ${x2.toFixed(1)},${y2.toFixed(1)} L${xi2.toFixed(1)},${yi2.toFixed(1)} A${ri},${ri} 0 ${sw>Math.PI?1:0} 0 ${xi1.toFixed(1)},${yi1.toFixed(1)} Z" fill="${x.c}" opacity=".88"/>`;
+    ang+=sw+0.08;
+  });
+  document.getElementById('audienceDnt').innerHTML=`
+    <div style="display:flex;gap:16px;align-items:center">
+      <svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0">${paths}
+        <text x="55" y="55" text-anchor="middle" font-family="Outfit" font-size="13" font-weight="800" fill="var(--text)">${total}</text>
+        <text x="55" y="67" text-anchor="middle" font-family="Outfit" font-size="9" fill="var(--sub)">posts</text>
+      </svg>
+      <div style="display:flex;flex-direction:column;gap:8px;flex:1">
+        ${segs.map(x=>`<div style="display:flex;align-items:center;gap:8px;font-size:.78rem">
+          <div style="width:8px;height:8px;border-radius:50%;background:${x.c};flex-shrink:0"></div>
+          <span style="flex:1">${x.l}</span>
+          <span style="font-family:var(--mono);color:${x.c}">${x.v}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+
+  // All posts table
+  const tablePosts = allPosts.length ? allPosts : pubPosts;
+  if (!tablePosts.length) {
+    document.getElementById('topTable').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--sub)">
+      No posts yet — <span style="color:var(--tt);cursor:pointer" onclick="go('sched',document.getElementById('ni-sched'))">schedule your first video</span></td></tr>`;
+    return;
+  }
+  document.getElementById('topTable').innerHTML=`
+    <thead><tr><th>Video</th><th>Views</th><th>Likes</th><th>Comments</th><th>ER</th><th>Status</th></tr></thead>
+    <tbody>${tablePosts.slice(0,8).map(p=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:42px;border-radius:6px;background:var(--raise);display:flex;align-items:center;justify-content:center;font-size:1rem;border:1px solid var(--line);flex-shrink:0">${statusEmoji(p.status)}</div>
+        <div style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.caption||'(no caption)'}</div>
+      </div></td>
+      <td style="color:var(--tc);font-family:var(--mono);font-size:.8rem">${fmt(p.analytics?.views||0)}</td>
+      <td style="color:var(--tt);font-family:var(--mono);font-size:.8rem">${fmt(p.analytics?.likes||0)}</td>
+      <td style="color:var(--purple);font-family:var(--mono);font-size:.8rem">${fmt(p.analytics?.comments||0)}</td>
+      <td style="color:var(--amber);font-family:var(--mono);font-size:.8rem">${p.analytics?.views?((p.analytics.likes/p.analytics.views)*100).toFixed(1)+'%':'—'}</td>
+      <td><span class="pill ${statusPill(p.status)}">${p.status}</span></td>
+    </tr>`).join('')}</tbody>`;
+}
+
+/* ══════════ SCHEDULER / UPLOAD ══════════ */
+function triggerUpload(el) {
+  if (el.classList.contains('done')) return;
+  document.getElementById('realFileInput').click();
+}
+
+async function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const zone  = document.getElementById('uploadZone');
+  const prog  = document.getElementById('uzProg');
+  const bar   = document.getElementById('uzBar');
+  const fname = document.getElementById('uzFile');
+  prog.style.display = 'block'; bar.style.width = '0%';
+  zone.querySelector('.uz-main').textContent = 'Uploading ' + file.name + '…';
+  const fd = new FormData();
+  fd.append('video', file);
+  try {
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE}/posts/upload`);
+      xhr.withCredentials = true;
+      xhr.upload.onprogress = ev => { if (ev.lengthComputable) bar.style.width = Math.round(ev.loaded/ev.total*100)+'%'; };
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const d = JSON.parse(xhr.responseText);
+          uploadedVideoPath = d.video_path;
+          bar.style.width = '100%';
+          zone.querySelector('.uz-main').textContent = '✅  ' + file.name + ' — Ready';
+          fname.style.display = 'block';
+          fname.textContent = file.name + '  ·  ' + (file.size/1048576).toFixed(1) + ' MB';
+          zone.classList.add('done');
+          updatePhoneBg(file);   // show video in phone preview
+          resolve();
+        } else reject(new Error('HTTP ' + xhr.status));
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.send(fd);
+    });
+  } catch (err) {
+    toast('⚠️ Upload failed: ' + err.message);
+    zone.querySelector('.uz-main').textContent = 'Drop your TikTok video here or click to browse';
+    prog.style.display = 'none';
+  }
+  e.target.value = '';
+}
+
+function syncPreview() {
+  const v = document.getElementById('capInput').value || 'Your caption appears here in real-time...';
+  document.getElementById('phCaption').textContent = v.substring(0,140);
+  // Update account info in preview if user is connected
+  if (currentUser) updateSidebar(currentUser);
+}
+
+function updatePhoneBg(file) {
+  const bg = document.getElementById('phBg');
+  if (!bg || !file) return;
+  const url = URL.createObjectURL(file);
+  bg.innerHTML = `<video src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" muted loop autoplay playsinline></video>`;
+}
+
+async function doSchedule() {
+  if (!uploadedVideoPath) { toast('⚠️ Please upload a video first'); return; }
+  const cap = document.getElementById('capInput').value.trim();
+  if (!cap)  { toast('⚠️ Please add a caption first'); return; }
+  if (currentUser && !currentUser.tiktok_connected) {
+    toast('⚠️ Connect TikTok first (Settings → Connect TikTok)');
+    return;
+  }
+  const d   = document.getElementById('schDate').value;
+  const t   = document.getElementById('schTime').value;
+  const r   = await apiFetch('/posts', { method:'POST', body:{
+    caption:       cap,
+    video_path:    uploadedVideoPath,
+    scheduled_at:  d && t ? `${d}T${t}:00` : null,
+    hashtags:      TAGS,
+    privacy:       document.getElementById('privSel').value,
+  }});
+  if (r.ok) {
+    toast('🕐 Post scheduled!');
+    uploadedVideoPath = null;
+    const zone = document.getElementById('uploadZone');
+    zone.classList.remove('done');
+    zone.querySelector('.uz-main').textContent = 'Drop your TikTok video here or click to browse';
+    document.getElementById('uzProg').style.display = 'none';
+    document.getElementById('uzFile').style.display = 'none';
+    document.getElementById('capInput').value = '';
+    TAGS = ['#fyp','#viral','#automation','#tiktok','#pakistan'];
+    renderTags();
+    await Promise.all([loadDashboard(), loadQueue('all')]);
+  } else toast('⚠️ ' + (r.data?.error || 'Failed to schedule post'));
+}
+
+async function saveDraft() {
+  const cap = document.getElementById('capInput').value.trim();
+  if (!cap && !uploadedVideoPath) { toast('⚠️ Add a caption or video first'); return; }
+  const r = await apiFetch('/posts', { method:'POST', body:{ caption:cap, video_path:uploadedVideoPath, hashtags:TAGS } });
+  if (r.ok) { toast('📝 Draft saved!'); await loadDashboard(); }
+  else toast('⚠️ ' + (r.data?.error || 'Failed to save draft'));
+}
+
+/* ══════════ TIKTOK CONNECT ══════════ */
+async function connectTikTok() {
+  const btn = document.getElementById('connectTikTokBtn');
+  if (btn) { btn.textContent = 'Redirecting…'; btn.disabled = true; }
+  try {
+    const r = await fetch(`${SERVER_URL}/auth/tiktok`, { credentials:'include' });
+    const d = await r.json();
+    if (d.auth_url) { window.location.href = d.auth_url; return; }
+  } catch (e) {}
+  if (btn) { btn.textContent = 'Connect TikTok Account via OAuth'; btn.disabled = false; }
+  toast('⚠️ Could not get TikTok auth URL');
+}
+
+/* ══════════ HASHTAGS ══════════ */
+function addTag(e) {
+  if (e.key==='Enter' || e.key===',') {
+    const v = document.getElementById('htInput').value.trim().replace(/,/g,'');
+    if (v) { TAGS.push(v.startsWith('#')?v:'#'+v); renderTags(); document.getElementById('htInput').value=''; }
+    e.preventDefault();
+  }
+}
+function quickTag(t){ if (!TAGS.includes(t)) { TAGS.push(t); renderTags(); } }
+function renderTags(){
+  document.getElementById('htWrap').innerHTML = TAGS.map((t,i)=>
+    `<div class="ht-chip" onclick="TAGS.splice(${i},1);renderTags()">${t} ×</div>`).join('');
+}
+
+/* ══════════ NAV ══════════ */
+const TITLES = {dash:'Dashboard',sched:'Post Scheduler',camps:'Campaigns',queue:'Video Queue',engage:'Engagement',anal:'Analytics',settings:'Settings'};
+function go(id, el) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('tbTitle').textContent = TITLES[id];
+  if (id==='anal')     renderAnalytics();
+  if (id==='queue')    loadQueue('all');
+  if (id==='engage')   loadComments();
+  if (id==='camps')    loadCampaigns();
+  if (id==='settings') currentUser && updateSidebar(currentUser);
+  if (id==='sched') {
+    const banner = document.getElementById('ttWarningBanner');
+    if (banner) banner.style.display = (currentUser && !currentUser.tiktok_connected) ? 'flex' : 'none';
+  }
+}
+
+/* ══════════ TOAST ══════════ */
+function toast(msg) {
+  const el  = document.getElementById('toastEl');
+  const ico = ['⚠️','📝','🕐','🗑','📋','🔄','🚀','❤️','↩'].find(k=>msg.startsWith(k)) || '✅';
+  document.getElementById('toastIco').textContent = ico;
+  document.getElementById('toastMsg').textContent = msg.replace(/^[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}⚠️📝🕐🗑📋🔄🚀✅⏏❤️↩]+\s*/u,'');
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
